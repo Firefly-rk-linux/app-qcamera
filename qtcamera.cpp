@@ -377,6 +377,7 @@ void qtCamera::closeEvent(QCloseEvent *event)
 
 void qtCamera::on_cameraSwitch()
 {
+    int btn_num=0;
     QList<QPushButton *> buttons = centralWidget()->findChildren<QPushButton *>();
     for(auto *bt: buttons){
         if(bt->isChecked()){
@@ -388,6 +389,11 @@ void qtCamera::on_cameraSwitch()
             bt->setChecked(false);
             qDebug() << "switch to " + bt->text();
             const QList<QCameraInfo> availableCameras = QCameraInfo::availableCameras();
+	    if(! bt->text().compare(availableCameras.at(btn_num).description())){
+		qDebug() << availableCameras.at(btn_num).description() << ":" << availableCameras.at(btn_num).deviceName();
+		setCamera(availableCameras.at(btn_num));
+		break;
+	    }
             for (const QCameraInfo &cameraInfo : availableCameras) {
                 if(! bt->text().compare(cameraInfo.description())){
                     qDebug() << cameraInfo.description();
@@ -396,6 +402,7 @@ void qtCamera::on_cameraSwitch()
             }
             break;
         }
+	btn_num++;
     }
 }
 
