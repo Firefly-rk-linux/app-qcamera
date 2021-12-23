@@ -72,7 +72,7 @@ Q_DECLARE_METATYPE(QCameraInfo)
 
 qtCamera::qtCamera()
 {
-    initlayout();
+    QCameraInfo defaultCamInfo = initlayout();
     QFileInfo fi(DIR_USERDATA);
     if(fi.isDir()){
         locationDir = DIR_USERDATA;
@@ -83,31 +83,41 @@ qtCamera::qtCamera()
         }
     }
     imageCnt = videoCnt = 0;
-    setCamera(QCameraInfo::defaultCamera());
+    setCamera(defaultCamInfo);
 }
 
-void qtCamera::initlayout()
+QCameraInfo qtCamera::initlayout()
 {
     QBoxLayout *vLayout = new QVBoxLayout();
     const QRect availableGeometry = QApplication::desktop()->availableGeometry(this);
     QFont font;
+	bool findDefault = false;
     font.setPixelSize(FONT_SIZE);
     resize(availableGeometry.width(), availableGeometry.height());
 
     const QList<QCameraInfo> availableCameras = QCameraInfo::availableCameras();
+    QCameraInfo defaultCamInfo = availableCameras[0];
     for (const QCameraInfo &cameraInfo : availableCameras) {
         qDebug() << cameraInfo.description();
-        QPushButton *camera = getButton();
-        camera->setText(cameraInfo.description());
-        camera->setFont(font);
-        camera->setCheckable(true);
-        if (cameraInfo == QCameraInfo::defaultCamera()){
-            camera->setDefault(true);
-        }else {
-            camera->setDefault(false);
-        }
-        connect(camera, SIGNAL(clicked(bool)), this, SLOT(on_cameraSwitch()));
-        vLayout->addWidget(camera);
+
+		if (cameraInfo.description() == "rkisp_mainpath" || cameraInfo.description() == "rkisp_selfpath"){
+			if (findDefault == false){
+				qDebug() << "default is null, set default camera";
+				defaultCamInfo = cameraInfo;
+				findDefault = true;
+			}
+	        QPushButton *camera = getButton();
+	        camera->setText(cameraInfo.description());
+	        camera->setFont(font);
+	        camera->setCheckable(true);
+	        if (cameraInfo == QCameraInfo::defaultCamera()){
+	            camera->setDefault(true);
+	        }else {
+	            camera->setDefault(false);
+	        }
+	        connect(camera, SIGNAL(clicked(bool)), this, SLOT(on_cameraSwitch()));
+	        vLayout->addWidget(camera);
+		}
     }
 
     modeButton = getButton();
@@ -143,6 +153,8 @@ void qtCamera::initlayout()
     setCentralWidget(widget);
     setWindowState(Qt::WindowMaximized);
     setWindowFlags(Qt::FramelessWindowHint);
+
+	return defaultCamInfo;
 }
 
 void qtCamera::setCamera(const QCameraInfo &cameraInfo)
@@ -396,18 +408,21 @@ void qtCamera::on_cameraSwitch()
             bt->setDefault(true);
             bt->setChecked(false);
             qDebug() << "switch to " + bt->text();
-            const QList<QCameraInfo> availableCameras = QCameraInfo::availableCameras();
-	    if(! bt->text().compare(availableCameras.at(btn_num).description())){
-		qDebug() << availableCameras.at(btn_num).description() << ":" << availableCameras.at(btn_num).deviceName();
-		setCamera(availableCameras.at(btn_num));
-		break;
-	    }
-            for (const QCameraInfo &cameraInfo : availableCameras) {
-                if(! bt->text().compare(cameraInfo.description())){
-                    qDebug() << cameraInfo.description();
-                    setCamera(cameraInfo);
-                }
-            }
+
+			const QList<QCameraInfo> availableCameras = QCameraInfo::availableCameras();
+			QList<QCameraInfo> viewableCameras;
+
+			for (const QCameraInfo &cameraInfo : availableCameras) {
+				if (cameraInfo.description() == "rkisp_mainpath" || cameraInfo.description() == "rkisp_selfpath") {
+					viewableCameras.append(cameraInfo);
+				}
+			}
+
+			if(! bt->text().compare(viewableCameras.at(btn_num).description())){
+				qDebug() << viewableCameras.at(btn_num).description() << ":" << viewableCameras.at(btn_num).deviceName();
+				setCamera(viewableCameras.at(btn_num));
+				break;
+			}
             break;
         }
 	btn_num++;

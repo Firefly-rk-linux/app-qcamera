@@ -65,7 +65,7 @@ class qtCamera : public QMainWindow
 
 public:
     qtCamera();
-    void initlayout();
+    QCameraInfo initlayout();
 private slots:
     void setCamera(const QCameraInfo &cameraInfo);
     void configureCaptureSettings();
